@@ -1,61 +1,12 @@
 <script setup lang="ts">
 import MQTTDemo from './components/MQTTDemo.vue'
-// import mqtt from 'mqtt' // import namespace "mqtt"
-
-// const client = mqtt.connect('ws://test.mosquitto.org:8080') // create a client
-// console.log(client, 'client')
-
-// client.on('connect', () => {
-//   client.subscribe('presence', (err) => {
-//     console.log('hello world')
-//     if (!err) {
-//       client.publish('presence', 'Hello mqtt')
-//     }
-//   })
-// })
-
-// client.on('message', (topic, message) => {
-//   // message is Buffer
-//   console.log(message.toString())
-//   client.end()
-// })
-// client.on('connect', () => {
-//   console.log('✅ Connected to broker')
-// })
-
-// client.on('error', (err) => {
-//   console.error('❌ Connection error:', err)
-// })
-
-// client.on('close', () => {
-//   console.log('🚪 Connection closed')
-// })
-
-// client.on('reconnect', () => {
-//   console.log('🔄 Reconnecting...')
-// })
-
-// client.on('offline', () => {
-//   console.log('📴 Client offline')
-// })
+import UseMQTTDemo from './components/UseMQTTDemo.vue'
 </script>
 
 <template>
-  <!-- <header> -->
-  <!-- <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" /> -->
-
-  <!-- <div class="wrapper"> -->
-  <!-- <HelloWorld msg="You did it!" /> -->
-  <!-- <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav> -->
-  <!-- </div>
-  </header>
-
-  <RouterView /> -->
   <div>
-    <MQTTDemo />
+    <!-- <MQTTDemo /> -->
+    <UseMQTTDemo />
   </div>
 </template>
 
