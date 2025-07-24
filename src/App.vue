@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
 import MQTTDemo from './components/MQTTDemo.vue'
 // import mqtt from 'mqtt' // import namespace "mqtt"
 

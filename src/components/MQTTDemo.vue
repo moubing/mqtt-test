@@ -1,6 +1,7 @@
 <template>
   <div class="h-screen w-full items-center justify-center flex">
     <div class="flex flex-col gap-2">
+      <div class="">{{ 'status:' + status }}</div>
       <div class="flex items-center gap-2">
         <label>订阅主题</label>
         <input
@@ -62,7 +63,10 @@ const unsubscribeTopic = ref('moubing')
 const publishTopic = ref('moubing')
 const publishMessage = ref('hello wolrd')
 
-const { subscirbe, onMessage, unsubscribe, publish } = useMQTT('ws://test.mosquitto.org:8080', null)
+const { status, subscirbe, onMessage, unsubscribe, publish } = useMQTT(
+  'ws://test.mosquitto.org:8080',
+  null,
+)
 const subscirbeHandler = () => {
   subscirbe(subscirbeTopic.value, (err) => {
     if (!err) {

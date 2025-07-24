@@ -9,6 +9,7 @@ type Option = {
 type Message = string | Buffer
 
 const mqttClient = ref<MqttClient | null>(null)
+const status = ref('disconnected')
 
 export const useMQTT = (url: string, option: Option | null) => {
   if (!mqttClient.value) {
@@ -26,7 +27,33 @@ export const useMQTT = (url: string, option: Option | null) => {
     mqttClient.value?.unsubscribe(topic)
   }
   const publish = (topic: string, message: Message) => [mqttClient.value?.publish(topic, message)]
+
+  mqttClient.value.on('connect', () => {
+    console.log('connect')
+    status.value = mqttClient.value?.connect ? 'connected' : 'disconnected'
+  })
+  mqttClient.value.on('reconnect', () => {
+    console.log('reconnect')
+    status.value = mqttClient.value?.connect ? 'connected' : 'disconnected'
+  })
+  mqttClient.value.on('close', () => {
+    console.log('close')
+    status.value = mqttClient.value?.connect ? 'connected' : 'disconnected'
+  })
+  mqttClient.value.on('end', () => {
+    console.log('end')
+    status.value = mqttClient.value?.connect ? 'connected' : 'disconnected'
+  })
+  mqttClient.value.on('error', () => {
+    console.log('error')
+    status.value = mqttClient.value?.connect ? 'connected' : 'disconnected'
+  })
+  mqttClient.value.on('disconnect', () => {
+    console.log('disconnect')
+    status.value = mqttClient.value?.connect ? 'connected' : 'disconnected'
+  })
   return {
+    status,
     subscirbe,
     onMessage,
     unsubscribe,
