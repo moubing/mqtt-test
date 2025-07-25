@@ -1,43 +1,6 @@
 <script setup lang="ts">
-import MQTTDemo from './components/MQTTDemo.vue'
-// import mqtt from 'mqtt' // import namespace "mqtt"
-
-// const client = mqtt.connect('ws://test.mosquitto.org:8080') // create a client
-// console.log(client, 'client')
-
-// client.on('connect', () => {
-//   client.subscribe('presence', (err) => {
-//     console.log('hello world')
-//     if (!err) {
-//       client.publish('presence', 'Hello mqtt')
-//     }
-//   })
-// })
-
-// client.on('message', (topic, message) => {
-//   // message is Buffer
-//   console.log(message.toString())
-//   client.end()
-// })
-// client.on('connect', () => {
-//   console.log('✅ Connected to broker')
-// })
-
-// client.on('error', (err) => {
-//   console.error('❌ Connection error:', err)
-// })
-
-// client.on('close', () => {
-//   console.log('🚪 Connection closed')
-// })
-
-// client.on('reconnect', () => {
-//   console.log('🔄 Reconnecting...')
-// })
-
-// client.on('offline', () => {
-//   console.log('📴 Client offline')
-// })
+// import MQTTDemo from './components/MQTTDemo.vue'
+import MQTTDemoChen from './components/MQTTDemoChen.vue'
 </script>
 
 <template>
@@ -54,8 +17,11 @@ import MQTTDemo from './components/MQTTDemo.vue'
   </header>
 
   <RouterView /> -->
-  <div>
+  <!-- <div>
     <MQTTDemo />
+  </div> -->
+  <div>
+    <MQTTDemoChen />
   </div>
 </template>
 
