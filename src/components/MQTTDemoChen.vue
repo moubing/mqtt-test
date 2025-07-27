@@ -20,14 +20,14 @@
             </span>
           </div>
           <button
-            @click="connect"
+            @click="connectM"
             class="px-3 py-1 rounded bg-green-100 hover:bg-green-200"
             :disabled="status === 'connected'"
           >
             连接
           </button>
           <button
-            @click="disconnect"
+            @click="disconnectM"
             class="px-3 py-1 rounded bg-red-100 hover:bg-red-200"
             :disabled="status !== 'connected'"
           >
@@ -173,7 +173,7 @@ import TestComponentB from './TestComponentB.vue'
 import TestComponentC from './TestComponentC.vue'
 
 // 主连接状态
-const { status, publish } = useMQTT('some')
+const { status, publish, connect, disconnect } = useMQTT('some')
 
 const customTopic = ref('')
 const customMessage = ref('')
@@ -183,14 +183,16 @@ const customPublish = () => {
 }
 
 // 连接/断开控制
-const connect = () => {
+const connectM = () => {
   // 这里假设你的 useMQTT 在初始化时自动连接
   console.log('连接 MQTT')
+  connect()
 }
 
-const disconnect = () => {
+const disconnectM = () => {
   // 这里需要根据你的 useMQTT 实现添加断开逻辑
   console.log('断开 MQTT')
+  disconnect()
 }
 
 // 主题1 (topic/test) 相关逻辑
