@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // import MQTTDemo from './components/MQTTDemo.vue'
+import MQTTDemoChen from './components/MQTTDemoChen.vue'
 </script>
 
 <template>
@@ -19,10 +20,12 @@
   <!-- <div>
     <MQTTDemo />
   </div> -->
-  <!-- <div>
+
+  <div>
+    dfsfdskj dfskljfldksj
     <MQTTDemoChen />
-  </div> -->
-  <RouterView />
+    <div>other</div>
+  </div>
 </template>
 
 <style scoped>

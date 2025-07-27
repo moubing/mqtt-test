@@ -1,5 +1,8 @@
+import MQTTDemoChen from '@/components/MQTTDemoChen.vue'
+import PageA from '@/components/PageA.vue'
+import PageB from '@/components/PageB.vue'
+import PageC from '@/components/PageC.vue'
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -7,15 +10,22 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView,
+      component: MQTTDemoChen,
     },
     {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
+      path: '/page-a',
+      name: 'page-a',
+      component: PageA,
+    },
+    {
+      path: '/page-b',
+      name: 'page-b',
+      component: PageB,
+    },
+    {
+      path: '/page-c',
+      name: 'page-c',
+      component: PageC,
     },
   ],
 })
