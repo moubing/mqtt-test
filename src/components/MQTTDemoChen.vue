@@ -209,7 +209,7 @@ const subscribeTest = () => {
   testMQTT.subscribe()
   testMessages.value.push({
     time: new Date().toLocaleTimeString(),
-    content: '已订阅 topic/test',
+    content: '已订阅 topic/hello',
   })
 }
 
@@ -217,7 +217,7 @@ const unsubscribeTest = () => {
   testMQTT.unsubscribe()
   testMessages.value.push({
     time: new Date().toLocaleTimeString(),
-    content: '已取消订阅 topic/test',
+    content: '已取消订阅 topic/hello',
   })
 }
 

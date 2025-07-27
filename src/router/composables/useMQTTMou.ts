@@ -16,8 +16,6 @@ const url = 'ws://test.mosquitto.org:8080'
 let reconnectAttempts = 0
 const MAX_RECONNECT_ATTEMPTS = 10
 
-// 测试使用的数据
-const sbuscribeSet = ref<Set<string>>(new Set())
 export const topicMessageCallbackMap = ref<Map<string, Set<MessageCallback>>>(new Map())
 
 // 初始化 MQTT 客户端并绑定全局事件
@@ -80,7 +78,6 @@ export const useMQTT = (topic: string, option: Option = { immediate: true, qos: 
         callback(err)
       } else {
         console.log(`订阅成功 [${topic}]`)
-        sbuscribeSet.value.add(topic)
         callback(err)
       }
     })
@@ -105,7 +102,6 @@ export const useMQTT = (topic: string, option: Option = { immediate: true, qos: 
     if (topicMessageCallbackMap.value.get(topic)?.size === 0) {
       mqttClient?.unsubscribe(topic, callback)
       topicMessageCallbackMap.value.delete(topic)
-      sbuscribeSet.value.delete(topic)
       console.log('unsubscribe' + topic)
     }
     messageCallback = undefined
@@ -126,7 +122,6 @@ export const useMQTT = (topic: string, option: Option = { immediate: true, qos: 
   }
 
   return {
-    sbuscribeSet,
     status,
     subscribe,
     onMessage,
