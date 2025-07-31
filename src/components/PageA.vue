@@ -19,6 +19,7 @@
 </template>
 
 <script setup lang="ts">
+import { testSchema } from '@/router/composables/useAntdFormZod'
 import { useMQTT } from '@/router/composables/useMQTTMou'
 import { ref } from 'vue'
 
@@ -30,6 +31,8 @@ const customMessage = ref('')
 const customPublish = () => {
   publish(customMessage.value, customTopic.value)
 }
+
+console.log(testSchema, 'test')
 </script>
 
 <style></style>

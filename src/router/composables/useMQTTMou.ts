@@ -16,7 +16,7 @@ type MessageItem = {
 }
 type MessageData = {
   id: string
-  type: 'inquire' | 'leader res' | 'confirm' | 'killed'
+  type: 'inquire' | 'leader res' | 'elect leader' | 'auto' | 'killed'
   leaderId?: string
 }
 
@@ -84,86 +84,100 @@ const initMQTTClient = (
 
 export const useMQTT = (
   topic: string,
-  option: Option = { immediate: true, isIdempotent: true, qos: 1 },
+  option: Option = { immediate: true, isIdempotent: false, qos: 1 },
 ) => {
   if (!topic) throw new Error('使用useMQTT的第一个参数（主题）不能为空字符串')
   const id = uuidv4()
   const bc = new BroadcastChannel(topic)
   const recognizedLeader = ref<string | undefined>(undefined)
   let idSet: Set<string> = new Set([id])
-  const status = ref<'normal' | 'candidate' | 'leader'>('normal')
-  let inquireTimer: number | NodeJS.Timeout | undefined = undefined
+  const status = ref<'normal' | 'leader'>('normal')
+
   let noResTimer: number | NodeJS.Timeout | undefined = undefined
   let electTimer: number | NodeJS.Timeout | undefined = undefined
 
   bc.onmessage = (e: MessageEvent) => {
     const data = e.data as MessageData
- if (data.id === id) return
     if (data.type === 'inquire' && status.value === 'normal') {
-      clearTimeout(inquireTimer)
-      clearTimeout(noResTimer)
-    } else if (data.type === 'inquire' && status.value === 'candidate') {
+      console.log(`【${topic}】【${id}】[normal]收到了【${data.type}】消息，来自于【${data.id}】`)
       clearTimeout(noResTimer)
       clearTimeout(electTimer)
       idSet.add(data.id)
       electTimer = setTimeout(() => {
+        console.log(
+          `【${topic}】【${id}】[normal]发出【elect leader】消息，认为大哥是${Array.from(idSet).sort()[0]}`,
+        )
         bc.postMessage({
-          type: 'leader res',
+          type: 'elect leader',
           id,
           leaderId: Array.from(idSet).sort()[0],
         } as MessageData)
-        console.log(
-          `【${topic}】【${id}】【${status.value}】收到了【${data.type}】消息,认为大哥是【${Array.from(idSet).sort()[0]}】,来自于【${data.id}】`,
-        )
       }, 300)
     } else if (data.type === 'inquire' && status.value === 'leader') {
       console.log(
-        `【${topic}】【${id}】【${status.value}】收到了【${data.type}】消息,来自于【${data.id}】`,
+        `【${topic}】【${id}】[leader]收到了【${data.type}】消息，来自于【${data.id}】，并重新宣布自己是大哥`,
       )
       bc.postMessage({
         type: 'leader res',
         id,
         leaderId: id,
       } as MessageData)
-    } else if (data.type === 'leader res') {
-      clearTimeout(noResTimer)
-
-      console.log(
-        `【${topic}】【${id}】【${status.value}】收到了【${data.type}】消息,大哥为【${data.leaderId}】,来自于【${data.id}】`,
-      )
+    } else if (data.type === 'elect leader' && status.value === 'normal') {
+      console.log(`【${topic}】【${id}】[normal]收到了【${data.type}】消息，来自于【${data.id}】`)
       recognizedLeader.value = data.leaderId
-      status.value = 'normal'
       if (id === data.leaderId) {
+        console.log(`【${topic}】【${id}】[normal]发现自己被选举为了大哥`)
         status.value = 'leader'
       }
-      idSet = new Set([id])
-    } else if (data.type === 'killed') {
-      startInquire()
-    }
-  }
-
-  const startInquire = () => {
-    inquireTimer = setTimeout(() => {
-      console.log(`【${topic}】【${id}】询问`)
-      status.value = 'candidate'
-      bc.postMessage({
-        type: 'inquire',
-        id,
-      } as MessageData)
-    }, 300)
-    noResTimer = setTimeout(() => {
-      console.log(`【${topic}】【${id}】由于没有得到回复，那么我成为leader`)
-      status.value = 'leader'
-      recognizedLeader.value = id
+    } else if (data.type === 'elect leader' && status.value === 'leader') {
+      console.log(
+        `【${topic}】【${id}】[leader]收到了【${data.type}】消息，来自于【${data.id}】，并发布消息禁止选举`,
+      )
       bc.postMessage({
         type: 'leader res',
         id,
         leaderId: id,
       } as MessageData)
-    }, 500)
-  }
+    } else if (data.type === 'leader res' && status.value === 'normal') {
+      console.log(
+        `【${topic}】【${id}】[normal]收到了【${data.type}】消息，来自于【${data.id}】，更改自己认可的大哥`,
+      )
 
-  startInquire()
+      clearTimeout(noResTimer)
+      clearTimeout(electTimer)
+      recognizedLeader.value = data.leaderId
+    } else if (data.type === 'killed') {
+      console.log(
+        `【${topic}】【${id}】[normal]收到了【${data.type}】消息，来自于【${data.id}】，大哥死了，重新选举`,
+      )
+      idSet = new Set([id])
+  noResTimer = setTimeout(() => {
+    console.log(`【${topic}】【${id}】由于没有收到leader回应，我自己成leader`)
+    bc.postMessage({
+      type: 'leader res',
+      id,
+    } as MessageData)
+    status.value = 'leader'
+    recognizedLeader.value = id
+  }, 1000)
+    }
+  }
+  setTimeout(() => {
+    console.log(`【${topic}】【${id}】发出了【inquire】消息`)
+    bc.postMessage({
+      type: 'inquire',
+      id,
+    } as MessageData)
+  }, 0)
+  noResTimer = setTimeout(() => {
+    console.log(`【${topic}】【${id}】由于没有收到leader回应，我自己成leader`)
+    bc.postMessage({
+      type: 'leader res',
+      id,
+    } as MessageData)
+    status.value = 'leader'
+    recognizedLeader.value = id
+  }, 1000)
   initMQTTClient(option, (t: string, payload: Buffer) => {
     const messageItems = topicMessageItemMap.value.get(t)
     if (messageItems) {
@@ -175,7 +189,9 @@ export const useMQTT = (
       }
       console.log(`收到消息 [${t}]:`, data)
       messageItems.forEach((item) => {
-        if (id === recognizedLeader.value) {
+        console.log(id, 'id')
+        console.log(recognizedLeader.value, 'recon leader')
+        if (item.id === recognizedLeader.value) {
           item.messageCallback(data)
         } else if (item.isIdempotent) {
           item.messageCallback(data)
@@ -240,13 +256,14 @@ export const useMQTT = (
   }
 
   const beforeUnloadHandler = () => {
-    console.log(id === recognizedLeader.value, '是不是leader')
     if (id === recognizedLeader.value) {
+      console.log(`【${topic}】【${id}】发出了【killed】消息`)
       bc.postMessage({
         type: 'killed',
         id,
       } as MessageData)
     }
+    bc.close()
   }
 
   onMounted(() => {
@@ -256,6 +273,8 @@ export const useMQTT = (
   // 组件卸载时取消订阅
   onUnmounted(() => {
     window.removeEventListener('beforeunload', beforeUnloadHandler)
+    bc.close()
+
     if (recognizedLeader.value === id) {
       bc.postMessage({
         type: 'killed',

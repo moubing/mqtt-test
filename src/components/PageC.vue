@@ -3,6 +3,19 @@
     <div class="max-w-[800px] p-4 bg-gray-50 rounded-lg shadow-lg border-slate-100">
       <div class="border p-4 rounded-lg">
         <h2 class="font-bold mb-2">主题: topic/world</h2>
+        <h2 class="font-bold mb-2">{{ testMQTT.id }}</h2>
+                  <div class="flex items-center gap-2">
+            <span class="font-medium">身份:</span>
+            <span class="text-sky-500">
+              {{ testMQTT.status  }}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-medium">leader为:</span>
+            <span class="text-sky-500">
+              {{  testMQTT.recognizedLeader }}
+            </span>
+          </div>
         <div class="flex flex-wrap gap-2 mb-4">
           <button @click="subscribeTest" class="px-3 py-1 rounded bg-blue-100 hover:bg-blue-200">
             订阅
