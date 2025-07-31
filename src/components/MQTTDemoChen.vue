@@ -15,21 +15,21 @@
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
             <span class="font-medium">连接状态:</span>
-            <span :class="status === 'connected' ? 'text-green-500' : 'text-red-500'">
-              {{ status }}
+            <span :class="connectionStatus === 'connected' ? 'text-green-500' : 'text-red-500'">
+              {{ connectionStatus }}
             </span>
           </div>
           <button
             @click="connectM"
             class="px-3 py-1 rounded bg-green-100 hover:bg-green-200"
-            :disabled="status === 'connected'"
+            :disabled="connectionStatus === 'connected'"
           >
             连接
           </button>
           <button
             @click="disconnectM"
             class="px-3 py-1 rounded bg-red-100 hover:bg-red-200"
-            :disabled="status !== 'connected'"
+            :disabled="connectionStatus !== 'connected'"
           >
             断开
           </button>
@@ -56,7 +56,20 @@
         <!-- 主题1控制区 -->
         <div class="border p-4 rounded-lg">
           <h2 class="font-bold mb-2">主题: topic/hello</h2>
+          <h2 class="font-bold mb-2">{{ id }}</h2>
           <div class="flex flex-wrap gap-2 mb-4">
+          <div class="flex items-center gap-2">
+            <span class="font-medium">身份:</span>
+            <span class="text-sky-500">
+              {{ status  }}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-medium">leader为:</span>
+            <span class="text-sky-500">
+              {{  recognizedLeader }}
+            </span>
+          </div>
             <button @click="subscribeTest" class="px-3 py-1 rounded bg-blue-100 hover:bg-blue-200">
               订阅
             </button>
@@ -88,8 +101,9 @@
         </div>
 
         <!-- 主题2控制区 -->
-        <div class="border p-4 rounded-lg">
+        <!-- <div class="border p-4 rounded-lg">
           <h2 class="font-bold mb-2">主题: topic/world</h2>
+          <h2 class="font-bold mb-2">{{ anotherMQTT.id }}</h2>
           <div class="flex flex-wrap gap-2 mb-4">
             <button
               @click="subscribeAnother"
@@ -122,7 +136,7 @@
               [{{ msg.time }}] {{ msg.content }}
             </div>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
 
@@ -148,9 +162,9 @@
         <div v-if="showComponentB" class="border p-3 rounded-lg">
           <TestComponentB />
         </div>
-        <div v-if="showComponentC" class="border p-3 rounded-lg">
+        <!-- <div v-if="showComponentC" class="border p-3 rounded-lg">
           <TestComponentC />
-        </div>
+        </div> -->
       </div>
     </div>
 
@@ -170,13 +184,20 @@ import { ref } from 'vue'
 import ShowMQTTState from './ShowMQTTState.vue'
 import TestComponentA from './TestComponentA.vue'
 import TestComponentB from './TestComponentB.vue'
-import TestComponentC from './TestComponentC.vue'
+// import TestComponentC from './TestComponentC.vue'
 
 // 主连接状态
-const { status, publish, connect, disconnect } = useMQTT('some')
 
+
+
+
+// 主题1 (topic/test) 相关逻辑
+const testMessage = ref('')
+const testMessages = ref<Array<{ time: string; content: string }>>([])
 const customTopic = ref('')
 const customMessage = ref('')
+
+const {publish, connect, connectionStatus, disconnect,onMessage,subscribe, unsubscribe, id, status, recognizedLeader} = useMQTT('topic/hello')
 
 const customPublish = () => {
   publish(customMessage.value, customTopic.value)
@@ -194,13 +215,7 @@ const disconnectM = () => {
   console.log('断开 MQTT')
   disconnect()
 }
-
-// 主题1 (topic/test) 相关逻辑
-const testMessage = ref('')
-const testMessages = ref<Array<{ time: string; content: string }>>([])
-
-const testMQTT = useMQTT('topic/hello')
-testMQTT.onMessage((data) => {
+onMessage((data) => {
   testMessages.value.push({
     time: new Date().toLocaleTimeString(),
     content: `收到消息: ${data} A`,
@@ -208,7 +223,7 @@ testMQTT.onMessage((data) => {
 })
 
 const subscribeTest = () => {
-  testMQTT.subscribe()
+  subscribe()
   testMessages.value.push({
     time: new Date().toLocaleTimeString(),
     content: '已订阅 topic/hello',
@@ -216,7 +231,7 @@ const subscribeTest = () => {
 }
 
 const unsubscribeTest = () => {
-  testMQTT.unsubscribe()
+  unsubscribe()
   testMessages.value.push({
     time: new Date().toLocaleTimeString(),
     content: '已取消订阅 topic/hello',
@@ -224,7 +239,7 @@ const unsubscribeTest = () => {
 }
 
 const publishTest = () => {
-  testMQTT.publish(testMessage.value || '测试消息 ' + new Date().toLocaleTimeString())
+  publish(testMessage.value || '测试消息 ' + new Date().toLocaleTimeString())
   testMessages.value.push({
     time: new Date().toLocaleTimeString(),
     content: `发布消息: ${testMessage.value || '测试消息'}`,
@@ -233,41 +248,41 @@ const publishTest = () => {
 }
 
 // 主题2 (topic/another) 相关逻辑
-const anotherMessage = ref('')
-const anotherMessages = ref<Array<{ time: string; content: string }>>([])
+// const anotherMessage = ref('')
+// const anotherMessages = ref<Array<{ time: string; content: string }>>([])
 
-const anotherMQTT = useMQTT('topic/world')
-anotherMQTT.onMessage((data) => {
-  anotherMessages.value.push({
-    time: new Date().toLocaleTimeString(),
-    content: `收到消息: ${data} B`,
-  })
-})
+// const anotherMQTT = useMQTT('topic/world')
+// anotherMQTT.onMessage((data) => {
+//   anotherMessages.value.push({
+//     time: new Date().toLocaleTimeString(),
+//     content: `收到消息: ${data} B`,
+//   })
+// })
 
-const subscribeAnother = () => {
-  anotherMQTT.subscribe()
-  anotherMessages.value.push({
-    time: new Date().toLocaleTimeString(),
-    content: '已订阅 topic/another',
-  })
-}
+// const subscribeAnother = () => {
+//   anotherMQTT.subscribe()
+//   anotherMessages.value.push({
+//     time: new Date().toLocaleTimeString(),
+//     content: '已订阅 topic/another',
+//   })
+// }
 
-const unsubscribeAnother = () => {
-  anotherMQTT.unsubscribe()
-  anotherMessages.value.push({
-    time: new Date().toLocaleTimeString(),
-    content: '已取消订阅 topic/another',
-  })
-}
+// const unsubscribeAnother = () => {
+//   anotherMQTT.unsubscribe()
+//   anotherMessages.value.push({
+//     time: new Date().toLocaleTimeString(),
+//     content: '已取消订阅 topic/another',
+//   })
+// }
 
-const publishAnother = () => {
-  anotherMQTT.publish(anotherMessage.value || '另一测试消息 ' + new Date().toLocaleTimeString())
-  anotherMessages.value.push({
-    time: new Date().toLocaleTimeString(),
-    content: `发布消息: ${anotherMessage.value || '另一测试消息'}`,
-  })
-  anotherMessage.value = ''
-}
+// const publishAnother = () => {
+//   anotherMQTT.publish(anotherMessage.value || '另一测试消息 ' + new Date().toLocaleTimeString())
+//   anotherMessages.value.push({
+//     time: new Date().toLocaleTimeString(),
+//     content: `发布消息: ${anotherMessage.value || '另一测试消息'}`,
+//   })
+//   anotherMessage.value = ''
+// }
 
 // 多组件测试
 const showComponentA = ref(true)

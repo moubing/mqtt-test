@@ -24,11 +24,11 @@
 </template>
 
 <script setup lang="ts">
-import { topicMessageCallbackMap } from '@/router/composables/useMQTTMou'
+import { topicMessageItemMap } from '@/router/composables/useMQTTMou'
 import { computed } from 'vue'
 
 // 将 Map 转换为数组便于渲染
-const topics = computed(() => Array.from(topicMessageCallbackMap.value.entries()))
+const topics = computed(() => Array.from(topicMessageItemMap.value.entries()))
 </script>
 
 <style scoped>

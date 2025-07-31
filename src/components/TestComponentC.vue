@@ -1,5 +1,6 @@
 <template>
   <h3 class="font-medium mb-2">组件C (订阅 topic/world)</h3>
+  <h3 class="font-medium mb-2">{{ componentCMQTT.id }}</h3>
   <div class="h-32 overflow-auto border p-2 rounded bg-gray-50">
     <div v-for="(msg, i) in componentCMessages" :key="i" class="text-sm mb-1">
       [{{ msg.time }}] {{ msg.content }}

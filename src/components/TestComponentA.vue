@@ -1,5 +1,18 @@
 <template>
   <h3 class="font-medium mb-2">组件A (订阅 topic/hello)</h3>
+  <h3 class="font-medium mb-2">{{ componentAMQTT.id }}</h3>
+            <div class="flex items-center gap-2">
+            <span class="font-medium">身份:</span>
+            <span class="text-sky-500">
+              {{ componentAMQTT.status }}
+            </span>
+          </div>
+                    <div class="flex items-center gap-2">
+            <span class="font-medium">leader为:</span>
+            <span class="text-sky-500">
+              {{  componentAMQTT.recognizedLeader }}
+            </span>
+          </div>
   <div class="h-32 overflow-auto border p-2 rounded bg-gray-50">
     <div v-for="(msg, i) in componentAMessages" :key="i" class="text-sm mb-1">
       [{{ msg.time }}] {{ msg.content }}
