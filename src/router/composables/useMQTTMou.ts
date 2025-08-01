@@ -1,13 +1,13 @@
 import type { IClientSubscribeOptions, MqttClient, PacketCallback } from 'mqtt'
 import mqtt, { type ClientSubscribeCallback } from 'mqtt'
-import { onMounted, onUnmounted, ref } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 type Option = IClientSubscribeOptions & {
   immediate: boolean
   isIdempotent: boolean
 }
-type Message = string | Buffer
+type Message = string | object | Buffer
 type MessageCallback = (data: string | object) => void
 type MessageItem = {
   id: string
@@ -16,7 +16,7 @@ type MessageItem = {
 }
 type MessageData = {
   id: string
-  type: 'inquire' | 'leader res' | 'elect leader' | 'auto' | 'killed'
+  type: 'inquire' | 'leader res' | 'elect leader' | 'killed'
   leaderId?: string
 }
 
@@ -28,13 +28,11 @@ const connectionStatus = ref('disconnected')
 const url = 'ws://broker.hivemq.com:8000/mqtt'
 let reconnectAttempts = 0
 const MAX_RECONNECT_ATTEMPTS = 10
-
 export const topicMessageItemMap = ref<Map<string, Set<MessageItem>>>(new Map())
+const defaultOption: Option = { immediate: true, isIdempotent: false, qos: 1 }
 
-const initMQTTClient = (
-  option: Option,
-  onMessageCallback: (t: string, payload: Buffer) => void,
-) => {
+
+const initMQTTClient = (option: Partial<Option>, messageCallback: (t: string, payload: Buffer) => void) => {
   if (!mqttClient) {
     mqttClient = mqtt.connect(url, {
       reconnectPeriod: 0, // 禁用自动重连
@@ -48,7 +46,7 @@ const initMQTTClient = (
       reconnectAttempts = 0
       if (option.immediate) {
         topicMessageItemMap.value.forEach((_, topic) => {
-          mqttClient?.subscribe(topic, { qos: option.qos }, (err) => {
+          mqttClient?.subscribe(topic, { qos: option?.qos || 1 }, (err) => {
             if (err) console.error(`订阅失败 [${topic}]:`, err)
             else console.log(`订阅成功 [${topic}]`)
           })
@@ -78,39 +76,46 @@ const initMQTTClient = (
       connectionStatus.value = 'disconnected'
     })
 
-    mqttClient.on('message', onMessageCallback)
+    mqttClient.on('message', messageCallback)
   }
 }
 
 export const useMQTT = (
   topic: string,
-  option: Option = { immediate: true, isIdempotent: false, qos: 1 },
+  option: Partial<Option>,
 ) => {
   if (!topic) throw new Error('使用useMQTT的第一个参数（主题）不能为空字符串')
+      option = {
+    ...defaultOption,
+    ...option,
+  }
   const id = uuidv4()
   const bc = new BroadcastChannel(topic)
   const recognizedLeader = ref<string | undefined>(undefined)
   let idSet: Set<string> = new Set([id])
   const status = ref<'normal' | 'leader'>('normal')
-
-  let noResTimer: number | NodeJS.Timeout | undefined = undefined
+  let hasRespond = false
   let electTimer: number | NodeJS.Timeout | undefined = undefined
 
   bc.onmessage = (e: MessageEvent) => {
     const data = e.data as MessageData
     if (data.type === 'inquire' && status.value === 'normal') {
       console.log(`【${topic}】【${id}】[normal]收到了【${data.type}】消息，来自于【${data.id}】`)
-      clearTimeout(noResTimer)
+      hasRespond = true
       clearTimeout(electTimer)
       idSet.add(data.id)
+      const firstId = Array.from(idSet).sort()[0]
       electTimer = setTimeout(() => {
-        console.log(
-          `【${topic}】【${id}】[normal]发出【elect leader】消息，认为大哥是${Array.from(idSet).sort()[0]}`,
-        )
+        console.log(`【${topic}】【${id}】[normal]发出【elect leader】消息，认为大哥是${firstId}`)
+        recognizedLeader.value = firstId
+        if (id === firstId) {
+          status.value = 'leader'
+        }
+
         bc.postMessage({
           type: 'elect leader',
           id,
-          leaderId: Array.from(idSet).sort()[0],
+          leaderId: firstId,
         } as MessageData)
       }, 300)
     } else if (data.type === 'inquire' && status.value === 'leader') {
@@ -124,6 +129,7 @@ export const useMQTT = (
       } as MessageData)
     } else if (data.type === 'elect leader' && status.value === 'normal') {
       console.log(`【${topic}】【${id}】[normal]收到了【${data.type}】消息，来自于【${data.id}】`)
+      hasRespond = true
       recognizedLeader.value = data.leaderId
       if (id === data.leaderId) {
         console.log(`【${topic}】【${id}】[normal]发现自己被选举为了大哥`)
@@ -142,24 +148,23 @@ export const useMQTT = (
       console.log(
         `【${topic}】【${id}】[normal]收到了【${data.type}】消息，来自于【${data.id}】，更改自己认可的大哥`,
       )
-
-      clearTimeout(noResTimer)
+      hasRespond = true
       clearTimeout(electTimer)
       recognizedLeader.value = data.leaderId
     } else if (data.type === 'killed') {
       console.log(
         `【${topic}】【${id}】[normal]收到了【${data.type}】消息，来自于【${data.id}】，大哥死了，重新选举`,
       )
+      hasRespond = false
       idSet = new Set([id])
-  noResTimer = setTimeout(() => {
-    console.log(`【${topic}】【${id}】由于没有收到leader回应，我自己成leader`)
-    bc.postMessage({
-      type: 'leader res',
-      id,
-    } as MessageData)
-    status.value = 'leader'
-    recognizedLeader.value = id
-  }, 1000)
+      recognizedLeader.value = undefined
+      setTimeout(() => {
+        console.log(`【${topic}】【${id}】发出了【inquire】消息`)
+        bc.postMessage({
+          type: 'inquire',
+          id,
+        } as MessageData)
+      }, 0)
     }
   }
   setTimeout(() => {
@@ -169,15 +174,6 @@ export const useMQTT = (
       id,
     } as MessageData)
   }, 0)
-  noResTimer = setTimeout(() => {
-    console.log(`【${topic}】【${id}】由于没有收到leader回应，我自己成leader`)
-    bc.postMessage({
-      type: 'leader res',
-      id,
-    } as MessageData)
-    status.value = 'leader'
-    recognizedLeader.value = id
-  }, 1000)
   initMQTTClient(option, (t: string, payload: Buffer) => {
     const messageItems = topicMessageItemMap.value.get(t)
     if (messageItems) {
@@ -191,9 +187,8 @@ export const useMQTT = (
       messageItems.forEach((item) => {
         console.log(id, 'id')
         console.log(recognizedLeader.value, 'recon leader')
-        if (item.id === recognizedLeader.value) {
-          item.messageCallback(data)
-        } else if (item.isIdempotent) {
+        console.log(hasRespond, 'has respond')
+        if (item.id === recognizedLeader.value || item.isIdempotent || !hasRespond) {
           item.messageCallback(data)
         } else {
           console.log('当前useMQTT不是leader，并且这个回调是非幂等性操作，不能调用它', item, id)
@@ -226,7 +221,7 @@ export const useMQTT = (
     messageItem = {
       id,
       messageCallback: callback,
-      isIdempotent: option.isIdempotent,
+      isIdempotent: option?.isIdempotent || false,
     }
     topicMessageItemMap.value.get(topic)?.add(messageItem)
   }
@@ -244,7 +239,11 @@ export const useMQTT = (
   }
 
   const publish = (message: Message, t: string = topic, callback?: PacketCallback) => {
-    mqttClient?.publish(t, message, { qos: option.qos || 1 }, callback)
+    let msg = message
+    if (Object.prototype.toString.call(message) === '[object Object]') {
+      msg = JSON.stringify(message)
+    }
+    mqttClient?.publish(t, msg as string, { qos: option.qos || 1 }, callback)
   }
 
   const connect = () => {
@@ -273,14 +272,7 @@ export const useMQTT = (
   // 组件卸载时取消订阅
   onUnmounted(() => {
     window.removeEventListener('beforeunload', beforeUnloadHandler)
-    bc.close()
-
-    if (recognizedLeader.value === id) {
-      bc.postMessage({
-        type: 'killed',
-        id,
-      } as MessageData)
-    }
+    beforeUnloadHandler()
     unsubscribe()
   })
 
